@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  app:
+    image: node:alpine
+    container_name: app
+    volumes:
+      - ./:/var/app/current
+    env_file:
+      - .env
+    command: node_modules/.bin/nodemon index.js
+    working_dir: /var/app/current

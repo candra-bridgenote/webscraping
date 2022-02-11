@@ -1,0 +1,10 @@
+/.idea
+/.vscode
+/node_modules
+
+npm-debug.log
+yarn-error.log
+docker-compose.override.yml
+
+.env
+.env.backup

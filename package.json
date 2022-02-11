@@ -1,0 +1,22 @@
+{
+  "name": "webscraping",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Candra Sudirman <candra_sudirman@bridgenote.id>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^0.25.0",
+    "cheerio": "^1.0.0-rc.10",
+    "dotenv": "^16.0.0",
+    "fs": "^0.0.1-security",
+    "json-2-csv": "^3.17.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
