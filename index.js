@@ -30,67 +30,73 @@ const targets = [
     {active: process.env.PAGE_PRODUSER, href: '/id/5-produsen'},
 ];
 
+const fetchSispro = async function (target, callback) {
+    const { data } = await axios.get(target);
+    const rawHTML = data;
+    const $ = cheerio.load(rawHTML);
+
+    await callback($, rawHTML);
+}
+
 const initCompany = async function (company) {
-    const detail = `${axios.defaults.baseURL}${company}`; 
+    const detail = `${axios.defaults.baseURL}${company}`;
+
+    let companyData = null;
 
     try {
-        const { data } = await axios.get(detail);
-        const rawHTML = data;
-        const $ = cheerio.load(rawHTML);
+        await fetchSispro(company, function ($, rawHTML) {
+            let cmpyName = $(elements.COMPANY_NAME, rawHTML).text();
+            let cmpyDesc = $(elements.COMPANY_DESC, rawHTML).text().replace(/\s+/g, ' ').trim();
+            let cmpyDetails = [];
 
-        let cmpyName = $(elements.COMPANY_NAME, rawHTML).text();
-        let cmpyDesc = $(elements.COMPANY_DESC, rawHTML).text().replace(/\s+/g, ' ').trim();
-        let cmpyDetails = [];
+            $(elements.COMPANY_DETAILS, rawHTML)
+                .each((i, tr) => {
+                    let details = $(tr).text()
+                        .replace(/\s+/g, ' ')
+                        .replace('Alamat:', '')
+                        .replace(/ : /g, ': ')
+                        .trim();
 
-        $(elements.COMPANY_DETAILS, rawHTML)
-            .each((i, tr) => {
-                let details = $(tr).text()
-                    .replace(/\s+/g, ' ')
-                    .replace('Alamat:', '')
-                    .replace(/ : /g, ': ')
-                    .trim();
+                    cmpyDetails.push(details);
+                });
+            
+            console.log(`Successfully scapring from ${detail}.`);
 
-                cmpyDetails.push(details);
-            });
-        
-        console.log(`Successfully scapring from ${detail}.`);
-
-        return Promise.resolve({
-            name: cmpyName,
-            desc: cmpyDesc,
-            details: cmpyDetails.join(' ')
+            companyData = {
+                name: cmpyName,
+                desc: cmpyDesc,
+                details: cmpyDetails.join(' ')
+            };
         });
     } catch (error) {
         console.log(`Failed scapring from ${detail}.`);
-
-        return Promise.resolve(null);
     }
+
+    return Promise.resolve(companyData);
 };
 
 const initHTMLTarget = async function (target, companies = []) {
     const endpoint = `${axios.defaults.baseURL}${target}`;
 
     try {
-        const { data } = await axios.get(target);
-        const rawHTML = data;
-        const $ = cheerio.load(rawHTML);
+        await fetchSispro(target, async function ($, rawHTML) {
+            const nextPage = $(elements.NEXT_PAGE).attr('href');
 
-        const nextPage = $(elements.NEXT_PAGE).attr('href');
+            let [page] = $(elements.PAGE_INFO, rawHTML).text()
+                .replace(/\s+/g, ' ')
+                .split(' ')
+                .filter(info => Number(info));
 
-        let [page] = $(elements.PAGE_INFO, rawHTML).text()
-            .replace(/\s+/g, ' ')
-            .split(' ')
-            .filter(info => Number(info));
+            $(elements.READ_MORE, rawHTML).each((i, detail) => {
+                companies.push($(detail).attr('href'));
+            });
 
-        $(elements.READ_MORE, rawHTML).each((i, detail) => {
-            companies.push($(detail).attr('href'));
+            console.log(`Fetch data from ${endpoint}.`);
+
+            if (nextPage && pageResolver(page)) {
+                return await initHTMLTarget(nextPage, companies);
+            }
         });
-
-        console.log(`Fetch data from ${endpoint}.`);
-
-        if (nextPage && pageResolver(page)) {
-            return await initHTMLTarget(nextPage, companies);
-        }
     } catch (error) {
         console.log(`Failed fetch data from ${endpoint}.`);
     }
